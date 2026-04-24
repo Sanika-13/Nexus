@@ -1,29 +1,18 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+// server.js
+// Entry point for the Node.js server.
+// Responsibilities: load env vars → connect to DB → start listening.
+
 const dotenv = require('dotenv');
+dotenv.config(); // Load .env FIRST before anything else imports it
 
-dotenv.config();
+const app = require('./app');
+const connectDB = require('./config/db');
 
-const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Routes
-app.use('/api/farms', require('./routes/farmRoutes'));
-
-app.get('/', (req, res) => {
-  res.send('KhetGyan API is running...');
-});
-
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/khetgyan')
-  .then(() => console.log('✅ MongoDB Connected'))
-  .catch(err => console.error('❌ MongoDB Connection Error:', err));
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
+// Connect to MongoDB, then start the HTTP server
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Leaf, Satellite, CloudRain, Target, Globe, MapPin, Navigation } from 'lucide-react';
 import MapSection from './components/MapSection';
 
@@ -10,7 +10,8 @@ const translations = {
     subtext: "KhetGyan uses high-resolution satellite imagery and real-time weather AI to maximize your crop yield.",
     btnStart: "Start Monitoring",
     btnLearn: "Learn More",
-    btnApp: "Open App",
+    btnApp: "Install App",
+    btnAppInstalled: "Install App",
     featureTitle: "Advanced Precision Technology",
     feat1Title: "Satellite Vision",
     feat1Desc: "Monitor plant health using infrared imagery from deep space.",
@@ -30,7 +31,8 @@ const translations = {
     subtext: "खेतज्ञान आपकी फसल की उपज बढ़ाने के लिए उच्च-रिज़ॉल्यूशन सैटेलाइट इमेजरी और रीयल-टाइम वेदर AI का उपयोग करता है।",
     btnStart: "निगरानी शुरू करें",
     btnLearn: "अधिक जानें",
-    btnApp: "ऐप खोलें",
+    btnApp: "ऐप इंस्टॉल करें",
+    btnAppInstalled: "ऐप इंस्टॉल करें",
     featureTitle: "उन्नत सटीक तकनीक",
     feat1Title: "सैटेलाइट विज़न",
     feat1Desc: "गहरे अंतरिक्ष से इन्फ्रारेड इमेजरी का उपयोग करके पौधों के स्वास्थ्य की निगरानी करें।",
@@ -50,7 +52,8 @@ const translations = {
     subtext: "खेतज्ञान तुमच्या पिकाचे उत्पन्न वाढवण्यासाठी हाय-रिझोल्यूशन सॅटेलाइट इमेजरी आणि रिअल-टाइम वेदर AI वापरते.",
     btnStart: "देखरेख सुरू करा",
     btnLearn: "अधिक जाणून घ्या",
-    btnApp: "अ‍ॅप उघडा",
+    btnApp: "अ‍ॅप इंस्टॉल करा",
+    btnAppInstalled: "अ‍ॅप इंस्टॉल करा",
     featureTitle: "प्रगत अचूक तंत्रज्ञान",
     feat1Title: "सॅटेलाइट व्हिजन",
     feat1Desc: "अंतराळातील इन्फ्रारेड इमेजरी वापरून पिकांच्या आरोग्यावर लक्ष ठेवा.",
@@ -67,11 +70,32 @@ const translations = {
 
 function App() {
   const [lang, setLang] = useState('en');
-  const [view, setView] = useState('home'); // 'home', 'setup', 'map'
+  const [view, setView] = useState('home'); 
   const [coords, setCoords] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   const t = translations[lang];
+
+  // PWA Install Logic
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+  }, []);
+
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else {
+      alert("App is already installed or your browser doesn't support installation. (अ‍ॅप आधीच इंस्टॉल केले आहे किंवा तुमचा ब्राउझर सपोर्ट करत नाही.)");
+    }
+  };
 
   const handleGetLocation = () => {
     setLoading(true);
@@ -99,41 +123,19 @@ function App() {
       <div className="min-h-screen bg-emerald-50 flex flex-col">
         <nav className="bg-white border-b border-emerald-100 px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('home')}>
-            <div className="bg-emerald-600 p-2 rounded-lg">
-              <Leaf className="text-white" size={24} />
-            </div>
+            <div className="bg-emerald-600 p-2 rounded-lg"><Leaf className="text-white" size={24} /></div>
             <span className="text-2xl font-bold text-emerald-900 tracking-tight">KhetGyan</span>
           </div>
         </nav>
-        
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-white rounded-[3rem] p-12 shadow-2xl text-center border border-emerald-100">
-            <div className="bg-emerald-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8">
-              <MapPin className="text-emerald-700" size={40} />
-            </div>
+            <div className="bg-emerald-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8"><MapPin className="text-emerald-700" size={40} /></div>
             <h2 className="text-4xl font-extrabold text-emerald-950 mb-4">{t.setupTitle}</h2>
             <p className="text-emerald-800/70 mb-10 text-lg leading-relaxed">{t.setupDesc}</p>
-            
-            <button 
-              onClick={handleGetLocation}
-              disabled={loading}
-              className="w-full bg-emerald-700 text-white px-8 py-5 rounded-2xl font-bold text-xl hover:bg-emerald-800 shadow-xl shadow-emerald-200 transition-all flex items-center justify-center gap-3 disabled:bg-emerald-400"
-            >
-              {loading ? (
-                "Locating..."
-              ) : (
-                <>
-                  <Navigation size={24} /> {t.btnGetLoc}
-                </>
-              )}
+            <button onClick={handleGetLocation} disabled={loading} className="w-full bg-emerald-700 text-white px-8 py-5 rounded-2xl font-bold text-xl hover:bg-emerald-800 shadow-xl shadow-emerald-200 flex items-center justify-center gap-3 disabled:bg-emerald-400">
+              {loading ? "Locating..." : <><Navigation size={24} /> {t.btnGetLoc}</>}
             </button>
-
-            <button 
-              onClick={() => setView('home')}
-              className="mt-10 text-emerald-600 font-bold hover:underline"
-            >
-              ← Back to Home
-            </button>
+            <button onClick={() => setView('home')} className="mt-10 text-emerald-600 font-bold hover:underline">← Back to Home</button>
           </div>
         </div>
       </div>
@@ -150,13 +152,16 @@ function App() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
             <Globe size={18} className="text-emerald-700" />
-            <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-transparent text-sm font-bold text-emerald-900 outline-none">
-              <option value="en">English</option>
-              <option value="hi">हिंदी (Hindi)</option>
-              <option value="mr">मराठी (Marathi)</option>
+            <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-transparent text-sm font-bold text-emerald-900 outline-none cursor-pointer">
+              <option value="en">English</option><option value="hi">हिंदी (Hindi)</option><option value="mr">मराठी (Marathi)</option>
             </select>
           </div>
-          <button className="bg-emerald-700 text-white px-6 py-2 rounded-full font-semibold hover:bg-emerald-800 transition-colors">{t.btnApp}</button>
+          <button 
+            onClick={handleInstall}
+            className="bg-emerald-700 text-white px-6 py-2 rounded-full font-semibold hover:bg-emerald-800 transition-colors"
+          >
+            {deferredPrompt ? t.btnApp : t.btnAppInstalled}
+          </button>
         </div>
       </nav>
 
